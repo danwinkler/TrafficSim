@@ -19,32 +19,45 @@ public class TrafficSim extends Graphics2DRenderer
 	{
 		size( 800, 600 );
 		
+		
 		Road[] vr = new Road[10];
 		for( int i = 0; i < 10; i++ )
 		{
-			vr[i] = new TwoLaneRoad( i*50, 50, i*50, 500 );
+			vr[i] = new TwoLaneRoad( i*50 + 50, 50, i*50 + 50, 500 );
 			roads.add( vr[i] );
 		}
 		
-		for( float y = 0; y <= 1; y += .1f )
+		for( int x = 0; x < 9; x++ )
 		{
-			for( int x = 0; x < 9; x++ )
+			for( float y = .1f; y < 1; y += .1f )
 			{
-				roads.add( connectRoads( vr[x], y, vr[x+1], y ) );
+				roads.add( connectRoads( vr[x], y + DMath.randomf( -.01f, .01f ), vr[x+1], y + DMath.randomf( -.01f, .01f ) ) );
 			}
 		}
 		
-		for( int i = 0; i < 10; i++ )
+		for( int i = 0; i < 100; i++ )
 		{
-			cars.add( new Car( vr[0] ) );
+			cars.add( new Car( roads.get( DMath.randomi( 0, roads.size()-1 ) ) ) );
 		}
+		
+		
+		/*
+		Road a = new TwoLaneRoad( 100, 100, 100, 500 );
+		Road b = new TwoLaneRoad( 100, 200, 300, 200 );
+		
+		a.connections.add( a.new RoadConnection( b, -1, .25f ) );
+		b.connections.add( b.new RoadConnection( a, 0, 0 ) );
+		
+		roads.add( a );
+		roads.add( b );
+		*/
 	}
 
 	public void update() 
 	{
 		for( Car c : cars )
 		{
-			c.update();
+			c.update( cars );
 		}
 		
 		color( Color.white );
@@ -79,13 +92,11 @@ public class TrafficSim extends Graphics2DRenderer
 		
 		rv.set( -rv.y, rv.x ); //rot90CCW
 		
-		Vector2f av = new Vector2f( a.end );
-		av.sub( a.start );
-		a.connections.add( a.new RoadConnection( r, av.dot( rv ) > 0 ? 1 : 0, ad ) );
+		Vector2f av = a.getVector();
+		a.connections.add( a.new RoadConnection( r, av.dot( rv ) > 0 ? -1 : 1, ad ) );
 		
-		Vector2f bv = new Vector2f( b.end );
-		bv.sub( b.start );
-		b.connections.add( b.new RoadConnection( r, bv.dot( rv ) > 0 ? 1 : 0, bd ) );
+		Vector2f bv = b.getVector();
+		b.connections.add( b.new RoadConnection( r, bv.dot( rv ) > 0 ? 1 : -1, bd ) );
 		
 		return r;
 	}

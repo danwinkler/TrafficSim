@@ -1,9 +1,11 @@
 package com.danwink.trafficsim;
 
 import java.awt.Color;
+import java.util.ArrayList;
 
 import javax.vecmath.Point2f;
 import javax.vecmath.Point2i;
+import javax.vecmath.Vector2f;
 
 import com.danwink.trafficsim.Road.RoadConnection;
 import com.phyloa.dlib.renderer.Graphics2DRenderer;
@@ -24,10 +26,13 @@ public class Car
 	{
 		g.color( Color.red );
 		Point2f p = r.getPosition( pos );
+		Vector2f v = r.getOffsetVector( r.width/4 );
+		v.scale( rdir );
+		p.add( v );
 		g.fillOval( p.x-5, p.y-5, 10, 10 );
 	}
 	
-	public void update()
+	public void update( ArrayList<Car> cars )
 	{
 		//Randomly change roads
 		for( RoadConnection rc : r.connections )
@@ -40,13 +45,22 @@ public class Car
 					{
 						if( rc2.road == r )
 						{
-							rdir = rc2.pos > .5f ? -1 : 1;
+							rdir = DMath.randomf() > .5f ? -1 : 1;
 							pos = rc2.pos;
 						}
 					}
 					r = rc.road;
 					break;
 				}
+			}
+		}
+		
+		for( Car c : cars )
+		{
+			if( c.r == r && c.rdir == rdir )
+			{
+				float dist = c.pos*c.r.getLength()-pos*r.getLength();
+				if( dist > 0 && dist < 10 ) return;
 			}
 		}
 		

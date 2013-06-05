@@ -34,7 +34,7 @@ public class TrafficSim extends Graphics2DRenderer
 			}
 		}
 		
-		for( int i = 0; i < 30; i++ )
+		for( int i = 0; i < 200; i++ )
 		{
 			cars.add( new Car( roads.get( DMath.randomi( 0, roads.size()-1 ) ) ) );
 		}
@@ -56,7 +56,7 @@ public class TrafficSim extends Graphics2DRenderer
 	{	
 		for( Car c : cars )
 		{
-			c.update( cars );
+			c.update( cars, roads );
 		}
 		
 		color( Color.white );

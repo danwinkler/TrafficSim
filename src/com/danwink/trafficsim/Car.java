@@ -2,6 +2,7 @@ package com.danwink.trafficsim;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import javax.vecmath.Point2f;
 import javax.vecmath.Point2i;
@@ -21,6 +22,9 @@ public class Car
 	int rdir = 1;
 	Road r;
 	
+	ArrayList<Road> path = new ArrayList<Road>();
+	ArrayList<Float> pathDir = new ArrayList<Float>(); 
+	
 	public Car( Road r ) 
 	{
 		this.r = r;
@@ -33,28 +37,64 @@ public class Car
 		Vector2f v = r.getOffsetVector( r.width/4 );
 		v.scale( rdir );
 		p.add( v );
-		g.fillOval( p.x-5, p.y-5, 10, 10 );
+		g.fillOval( p.x-5, p.y-5, 10, 10 );		
 	}
 	
-	public void update( ArrayList<Car> cars )
+	public void pathTo( Road dest )
 	{
-		//Randomly change roads
-		for( RoadConnection rc : r.connections )
+		HashMap visited = new HashMap();
+		pathHelper( pos, r, dest, visited );
+	}
+	
+	private boolean pathHelper( float pos, Road on, Road dest, HashMap visited )
+	{
+		visited.put( on, 1 );
+		path.add( on );
+		for( RoadConnection rc : on.connections )
 		{
-			if( r.getPosition( pos ).distanceSquared( r.getPosition( rc.pos ) ) < 1 )
+			if( visited.get( rc.road ) == null )
 			{
-				if( DMath.randomf() > .5f )
+				pathDir.add( (float)(rc.pos - pos > 0 ? 1 : -1) );
+				if( rc.road == dest ) return true;
+				
+				boolean v = pathHelper( rc.pos, rc.road, dest, visited );
+				if( v ) return true;
+				pathDir.remove( pathDir.size()-1 );
+			}
+		}
+		path.remove( path.size()-1 );
+		return false;
+	}
+	
+	public void update( ArrayList<Car> cars, ArrayList<Road> roads )
+	{
+		assert( pathDir.size() == path.size() );
+		if( path.size() == 0 )
+		{
+			pathTo( roads.get( DMath.randomi( 0, roads.size() ) ) );
+		}
+		else
+		{
+			if( path.get( 0 ) == r )
+			{
+				path.remove( 0 );
+				rdir = pathDir.remove( 0 ) > 0 ? 1 : -1;
+			}
+			else
+			{
+				for( RoadConnection rc : r.connections )
 				{
-					for( RoadConnection rc2 : rc.road.connections )
+					if( path.get( 0 ) == rc.road )
 					{
-						if( rc2.road == r )
+						if( r.getPosition( pos ).distanceSquared( r.getPosition( rc.pos ) ) < 1 )
 						{
-							rdir = DMath.randomf() > .5f ? -1 : 1;
-							pos = rc2.pos;
+							RoadConnection rc2 = rc.road.getByRoad( r );
+							rdir = pathDir.get( 0 ) > 0 ? 1 : -1;
+							pos = rc2.pos;	
+							r = rc.road;
+							break;
 						}
 					}
-					r = rc.road;
-					break;
 				}
 			}
 		}
@@ -78,6 +118,10 @@ public class Car
 		{
 			if( cCarD > 0 )
 			{
+				if( cCarD < 10 )
+				{
+					speed = 0;
+				}
 				if( cCarD < 15 )
 				{
 					if( speed > 0 )
@@ -85,7 +129,7 @@ public class Car
 						speed -= accel*2;
 						if( speed < 0 ) speed = 0;
 					} 
-				} else if( cCarD < 50 )
+				} else if( cCarD < 50*speed )
 				{
 					if( speed > cCar.speed )
 					{

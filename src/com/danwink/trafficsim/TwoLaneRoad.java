@@ -1,6 +1,7 @@
 package com.danwink.trafficsim;
 
 import java.awt.Color;
+import java.awt.Polygon;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -22,11 +23,8 @@ public class TwoLaneRoad extends Road
 		width = 20;
 	}
 	
-	Color color = new Color( DMath.randomi( 0, 255 ), DMath.randomi( 0, 255 ), DMath.randomi( 0, 255 ) );
-	
 	public void render( Graphics2DRenderer g )
 	{
-		g.color( color );
 		switch( type )
 		{
 		case STRAIGHT:
@@ -70,6 +68,30 @@ public class TwoLaneRoad extends Road
 				endrc = endRoad.road.getByRoad( this );
 			}
 			
+			Polygon poly = new Polygon();
+			Point2f tp = null;
+			if( startRoad != null ) tp = getIntersection( this, 1, startRoad.road, startrc.side );
+			poly.addPoint( (int)(startRoad == null ? right.x : tp.x), 
+							(int)(startRoad == null ? right.y : tp.y) );
+			
+			if( startRoad != null ) tp = getIntersection( this, -1, startRoad.road, startrc.side );
+			poly.addPoint( (int)(startRoad == null ? left.x : tp.x), 
+							(int)(startRoad == null ? left.y : tp.y) );
+			
+			if( endRoad != null ) tp = getIntersection( this, -1, endRoad.road, endrc.side );
+			poly.addPoint( (int)(endRoad == null ? left.x + vector.x : tp.x), 
+							(int)(endRoad == null ? left.y + vector.y : tp.y) );
+			
+			if( endRoad != null ) tp = getIntersection( this, 1, endRoad.road, endrc.side );
+			poly.addPoint( (int)(endRoad == null ? right.x + vector.x : tp.x), 
+							(int)(endRoad == null ? right.y + vector.y : tp.y) );
+			
+			g.setLineWidth( 1 );
+			g.color( Color.lightGray );
+			g.g.fill( poly );
+			
+			g.color( Color.black );
+			g.setLineWidth( 2 );
 			for( int i = 0; i < 2; i++ )
 			{
 				Point2f offset = null;
@@ -132,6 +154,14 @@ public class TwoLaneRoad extends Road
 							(endRoad == null ? offset.y + vector.y : endRoadPos.y) );
 				}
 			}
+			
+			g.color( Color.yellow );
+			for( float i = 6; i < getLength(); i += 12 )
+			{
+				g.line( start.x + vector.x * i/getLength(), start.y + vector.y * i/getLength(), 
+						start.x + vector.x * (i+3)/getLength(), start.y + vector.y * (i+3)/getLength() );
+			}
+			break;
 		}
 	}
 	

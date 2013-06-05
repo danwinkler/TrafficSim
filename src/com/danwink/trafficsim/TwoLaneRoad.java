@@ -57,52 +57,93 @@ public class TwoLaneRoad extends Road
 			Collections.sort( rightRoads, roadConnectionComparator );
 			Collections.sort( leftRoads, roadConnectionComparator );
 			
-			//g.color( Color.BLACK );
+			RoadConnection startrc = null;
+			RoadConnection endrc = null;
 			
-			//g.line( right.x, right.y, right.x + vector.x, right.y + vector.y );
-			//g.line( left.x, left.y, left.x + vector.x, left.y + vector.y );
+			if( startRoad != null )
+			{
+				startrc = startRoad.road.getByRoad( this );
+			}
+			
+			if( endRoad != null )
+			{
+				endrc = endRoad.road.getByRoad( this );
+			}
 			
 			for( int i = 0; i < 2; i++ )
 			{
 				Point2f offset = null;
 				ArrayList<RoadConnection> rcArr = null;
+				int side = 0;
 				switch( i )
 				{
-				case 0: offset = right; rcArr = rightRoads; break;
-				case 1: offset = left; rcArr = leftRoads; break;
+				case 0: offset = right; rcArr = rightRoads; side = 1; break;
+				case 1: offset = left; rcArr = leftRoads; side = -1; break;
+				}
+				
+				Point2f startRoadPos = null;
+				Point2f endRoadPos = null;
+				
+				if( startRoad != null )
+				{
+					startRoadPos = getIntersection( this, side, startRoad.road, startrc.side );
+				}
+				
+				if( endRoad != null )
+				{
+					endRoadPos = getIntersection( this, side, endRoad.road, endrc.side );
 				}
 				
 				if( rcArr.size() == 0 )
 				{
-					g.line( offset.x + vector.x * (startRoad == null ? 0 : startRoad.road.width*.5f/getLength()), 
-							offset.y + vector.y * (startRoad == null ? 0 : startRoad.road.width*.5f/getLength()), 
-							offset.x + vector.x * (1-(endRoad == null ? 0 : endRoad.road.width*.5f/getLength())), 
-							offset.y + vector.y * (1-(endRoad == null ? 0 : endRoad.road.width*.5f/getLength())) );
+					g.line( (startRoad == null ? offset.x : startRoadPos.x), 
+							(startRoad == null ? offset.y : startRoadPos.y), 
+							(endRoad == null ? offset.x + vector.x : endRoadPos.x), 
+							(endRoad == null ? offset.y + vector.y : endRoadPos.y) );
 				} else
 				{
 					RoadConnection first = rcArr.get(0);
 					
-					g.line( offset.x + vector.x * (startRoad == null ? 0 : startRoad.road.width*.5f/getLength()), 
-							offset.y + vector.y * (startRoad == null ? 0 : startRoad.road.width*.5f/getLength()), 
-							offset.x + vector.x*(first.pos-(first.road.width*.5f/getLength())), 
-							offset.y + vector.y*(first.pos-(first.road.width*.5f/getLength())) );
+					Point2f fp = getIntersection( this, side, first.road, (first.road.getByRoad( this ).pos < .5f ? -1 : 1) * -side );
+					g.line( (startRoad == null ? offset.x : startRoadPos.x), 
+							(startRoad == null ? offset.y : startRoadPos.y), 
+							fp.x, 
+							fp.y );
+					
 					for( int j = 0; j < rcArr.size()-1; j++ )
 					{
 						RoadConnection a = rcArr.get( j );
-						RoadConnection b = rcArr.get( j+1 );
+						Point2f ap = getIntersection( this, side, a.road, (a.road.getByRoad( this ).pos < .5f ? 1 : -1) * -side );
 						
-						g.line( offset.x + vector.x*(a.pos+(a.road.width*.5f/getLength())), 
-								offset.y + vector.y*(a.pos+(a.road.width*.5f/getLength())), 
-								offset.x + vector.x*(b.pos-(b.road.width*.5f/getLength())), 
-								offset.y + vector.y*(b.pos-(b.road.width*.5f/getLength())) );
+						RoadConnection b = rcArr.get( j+1 );
+						Point2f bp = getIntersection( this, side, b.road, (b.road.getByRoad( this ).pos < .5f ? -1 : 1) * -side );
+						g.line( ap.x, 
+								ap.y,
+								bp.x,
+								bp.y );
 					}
+					
 					RoadConnection last = rcArr.get(rcArr.size()-1);
-					g.line( offset.x + vector.x * (last.pos+(last.road.width*.5f/getLength())), 
-							offset.y + vector.y * (last.pos+(last.road.width*.5f/getLength())), 
-							offset.x + vector.x * (1-(endRoad == null ? 0 : endRoad.road.width*.5f/getLength())), 
-							offset.y + vector.y * (1-(endRoad == null ? 0 : endRoad.road.width*.5f/getLength())) );
+					Point2f lp = getIntersection( this, side, last.road, (last.road.getByRoad( this ).pos < .5f ? 1 : -1) * -side );
+					
+					g.line( lp.x, 
+							lp.y, 
+							(endRoad == null ? offset.x + vector.x : endRoadPos.x), 
+							(endRoad == null ? offset.y + vector.y : endRoadPos.y) );
 				}
 			}
 		}
+	}
+	
+	public static Point2f getIntersection( Road r1, int r1side, Road r2, int r2side )
+	{
+		Point2f a = r1.getOffset( r1.width/2 * r1side );
+		Point2f b = new Point2f( a );
+		b.add( r1.getVector() );
+		
+		Point2f c = r2.getOffset( r2.width/2 * r2side );
+		Point2f d = new Point2f( c );
+		d.add( r2.getVector() );
+		return DMath.lineLineIntersection( a, b, c, d );
 	}
 }

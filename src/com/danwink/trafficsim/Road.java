@@ -114,4 +114,13 @@ public abstract class Road
 		vec.scale( amt );
 		return vec;
 	}
+	
+	public RoadConnection getByRoad( Road r )
+	{
+		for( RoadConnection rc : connections )
+		{
+			if( r == rc.road ) return rc;
+		}
+		return null;
+	}
 }

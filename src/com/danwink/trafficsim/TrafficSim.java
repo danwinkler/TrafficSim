@@ -43,9 +43,9 @@ public class TrafficSim extends Graphics2DRenderer
 		
 		/*
 		Road a = new TwoLaneRoad( 100, 100, 100, 500 );
-		Road b = new TwoLaneRoad( 100, 200, 300, 200 );
-		
-		a.connections.add( a.new RoadConnection( b, -1, .25f ) );
+		Road b = new TwoLaneRoad( 100, 200, 200, 500 );
+	
+		a.connections.add( a.new RoadConnection( b, 1, .25f ) );
 		b.connections.add( b.new RoadConnection( a, 0, 0 ) );
 		
 		roads.add( a );
@@ -54,7 +54,7 @@ public class TrafficSim extends Graphics2DRenderer
 	}
 
 	public void update() 
-	{
+	{	
 		for( Car c : cars )
 		{
 			c.update( cars );

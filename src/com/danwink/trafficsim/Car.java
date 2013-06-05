@@ -13,6 +13,10 @@ import com.phyloa.dlib.util.DMath;
 
 public class Car 
 {
+	float maxSpeed = DMath.randomf( 1.1f, 2.2f );
+	float accel = .1f;
+	
+	float speed = 0;
 	float pos;
 	int rdir = 1;
 	Road r;
@@ -55,16 +59,55 @@ public class Car
 			}
 		}
 		
+		float cCarD = 1000;
+		Car cCar = null;
 		for( Car c : cars )
 		{
-			if( c.r == r && c.rdir == rdir )
+			if( c.r == r && c.rdir == rdir && c != this )
 			{
-				float dist = c.pos*c.r.getLength()-pos*r.getLength();
-				if( dist > 0 && dist < 10 ) return;
+				float dist = (c.pos*c.r.getLength()-pos*r.getLength()) * rdir;
+				if( dist > 0 && dist < cCarD ) 
+				{
+					cCarD = dist;
+					cCar = c;
+				}
 			}
 		}
 		
-		pos += rdir * 1f * (1.f/r.getLength());
+		if( cCar != null )
+		{
+			if( cCarD > 0 )
+			{
+				if( cCarD < 15 )
+				{
+					if( speed > 0 )
+					{
+						speed -= accel*2;
+						if( speed < 0 ) speed = 0;
+					} 
+				} else if( cCarD < 50 )
+				{
+					if( speed > cCar.speed )
+					{
+						speed -= accel*.5f;
+					}
+					if( speed < 0 ) speed = 0;
+				}
+				else if( speed < maxSpeed )
+				{
+					speed += accel;
+				}
+			}
+		}
+		else
+		{
+			if( speed < maxSpeed )
+			{
+				speed += accel;
+			}
+		}
+		
+		pos += rdir * (speed/r.getLength());
 		if( pos > 1 )
 		{
 			pos = 1;

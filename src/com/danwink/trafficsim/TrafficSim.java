@@ -19,23 +19,22 @@ public class TrafficSim extends Graphics2DRenderer
 	{
 		size( 800, 600 );
 		
-		
-		Road[] vr = new Road[10];
-		for( int i = 0; i < 10; i++ )
+		Road[] vr = new Road[5];
+		for( int i = 0; i < vr.length; i++ )
 		{
-			vr[i] = new TwoLaneRoad( i*50 + 50, 50, i*50 + 50, 500 );
+			vr[i] = new TwoLaneRoad( i*100 + 50, 50, i*100 + 50, 500 );
 			roads.add( vr[i] );
 		}
 		
-		for( int x = 0; x < 9; x++ )
+		for( int x = 0; x < vr.length-1; x++ )
 		{
-			for( float y = .1f; y < 1; y += .1f )
+			for( float y = .1f; y < 1; y += .5f )
 			{
 				roads.add( connectRoads( vr[x], y + DMath.randomf( -.01f, .01f ), vr[x+1], y + DMath.randomf( -.01f, .01f ) ) );
 			}
 		}
 		
-		for( int i = 0; i < 100; i++ )
+		for( int i = 0; i < 30; i++ )
 		{
 			cars.add( new Car( roads.get( DMath.randomi( 0, roads.size()-1 ) ) ) );
 		}

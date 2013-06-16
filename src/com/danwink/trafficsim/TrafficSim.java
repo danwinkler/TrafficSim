@@ -1,6 +1,9 @@
 package com.danwink.trafficsim;
 
 import java.awt.Color;
+import java.awt.RenderingHints;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.ArrayList;
 
 import javax.vecmath.Point2f;
@@ -10,7 +13,7 @@ import com.danwink.trafficsim.Road.RoadConnection;
 import com.phyloa.dlib.renderer.Graphics2DRenderer;
 import com.phyloa.dlib.util.DMath;
 
-public class TrafficSim extends Graphics2DRenderer 
+public class TrafficSim extends Graphics2DRenderer implements MouseListener
 {
 	ArrayList<Road> roads = new ArrayList<Road>();
 	ArrayList<Car> cars = new ArrayList<Car>();
@@ -50,8 +53,12 @@ public class TrafficSim extends Graphics2DRenderer
 		roads.add( a );
 		roads.add( b );
 		*/
+		
+		canvas.addMouseListener( this );
 	}
-
+	
+	RoadPosition beginRoad;
+	
 	public void update() 
 	{	
 		for( Car c : cars )
@@ -59,18 +66,59 @@ public class TrafficSim extends Graphics2DRenderer
 			c.update( cars, roads );
 		}
 		
+		g.setRenderingHint( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
+		
 		color( Color.white );
 		fillRect( 0, 0, getWidth(), getHeight() );
 		
-		for( Road r : roads )
+		synchronized( roads )
 		{
-			r.render( this );
+			for( Road r : roads )
+			{
+				r.render( this );
+			}
 		}
 		
 		for( Car c : cars )
 		{
 			c.render( this );
 		}
+		
+		if( beginRoad != null )
+		{
+			color( Color.GREEN );
+			line( beginRoad.r.start.x + beginRoad.r.getVector().x*beginRoad.pos, beginRoad.r.start.y + beginRoad.r.getVector().y*beginRoad.pos, m.x, m.y );
+		}
+		
+		if( m.clicked )
+		{
+			RoadPosition rp = getRoad( m.x, m.y );
+			if( rp != null )
+			{
+				color( Color.GREEN );
+				fillOval( rp.r.start.x + rp.r.getVector().x*rp.pos - 10, rp.r.start.y + rp.r.getVector().y*rp.pos - 10, 20, 20 );
+			}
+		}
+	}
+	
+	public RoadPosition getRoad( float x, float y )
+	{
+		Point2f p = new Point2f( x, y );
+		RoadPosition rp = null;
+		float dis = 1000;
+		for( int i = 0; i < roads.size(); i++ )
+		{
+			Road r = roads.get( i );
+			Vector2f toLine = DMath.pointToLineSegment( r.start, r.getVector(), p );
+			float d2 = toLine.lengthSquared();
+			float rw2 = (r.width/2);
+			rw2 *= rw2;
+			if( d2 < dis && d2 < rw2 )
+			{
+				rp = new RoadPosition( r, DMath.posOnLineByPerpPoint( r.start, r.getVector(), p ) );
+			}
+		}
+		return rp;
 	}
 	
 	public Road connectRoads( Road a, float ad, Road b, float bd )
@@ -104,5 +152,57 @@ public class TrafficSim extends Graphics2DRenderer
 	{
 		TrafficSim ts = new TrafficSim();
 		ts.begin();
+	}
+
+	@Override
+	public void mouseClicked(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseExited(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void mousePressed( MouseEvent e ) 
+	{
+		
+	}
+
+	public void mouseReleased( MouseEvent e ) 
+	{
+		RoadPosition rp = getRoad( e.getX(), e.getY() );
+		if( rp != null )
+		{
+			if( rp.pos < 0 ) rp.pos = 0;
+			if( rp.pos > 1 ) rp.pos = 1;
+		}
+		
+		if( beginRoad == null )
+		{
+			if( rp != null )
+			{
+				beginRoad = rp;
+			}
+		}
+		else
+		{
+			if( rp != null )
+			{
+				synchronized( roads )
+				{
+					roads.add( connectRoads( beginRoad.r, beginRoad.pos, rp.r, rp.pos ) );
+				}
+				beginRoad = null;
+			}
+		}
 	}
 }

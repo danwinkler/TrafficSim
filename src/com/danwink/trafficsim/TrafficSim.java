@@ -33,7 +33,9 @@ public class TrafficSim extends Graphics2DRenderer implements MouseListener
 		{
 			for( float y = .1f; y < 1; y += .5f )
 			{
-				roads.add( connectRoads( vr[x], y + DMath.randomf( -.01f, .01f ), vr[x+1], y + DMath.randomf( -.01f, .01f ) ) );
+				RoadPosition a = new RoadPosition( vr[x], y + DMath.randomf( -.01f, .01f ) );
+				RoadPosition b = new RoadPosition( vr[x+1], y + DMath.randomf( -.01f, .01f ) );
+				roads.add( createRoad( a, b ) );
 			}
 		}
 		
@@ -87,7 +89,7 @@ public class TrafficSim extends Graphics2DRenderer implements MouseListener
 		if( beginRoad != null )
 		{
 			color( Color.GREEN );
-			line( beginRoad.r.start.x + beginRoad.r.getVector().x*beginRoad.pos, beginRoad.r.start.y + beginRoad.r.getVector().y*beginRoad.pos, m.x, m.y );
+			line( beginRoad.getCoords().x, beginRoad.getCoords().y, m.x, m.y );
 		}
 		
 		if( m.clicked )
@@ -96,7 +98,8 @@ public class TrafficSim extends Graphics2DRenderer implements MouseListener
 			if( rp != null )
 			{
 				color( Color.GREEN );
-				fillOval( rp.r.start.x + rp.r.getVector().x*rp.pos - 10, rp.r.start.y + rp.r.getVector().y*rp.pos - 10, 20, 20 );
+				Point2f p = rp.getCoords();
+				fillOval( p.x - 10, p.y - 10, 20, 20 );
 			}
 		}
 	}
@@ -118,32 +121,51 @@ public class TrafficSim extends Graphics2DRenderer implements MouseListener
 				rp = new RoadPosition( r, DMath.posOnLineByPerpPoint( r.start, r.getVector(), p ) );
 			}
 		}
+		
+		if( rp == null )
+		{
+			rp = new RoadPosition( x, y );
+		}
 		return rp;
 	}
 	
-	public Road connectRoads( Road a, float ad, Road b, float bd )
+	public Road createRoad( RoadPosition ap, RoadPosition bp )
 	{
-		Point2f pa = new Point2f( DMath.lerp( ad, a.start.x, a.end.x ), DMath.lerp( ad, a.start.y, a.end.y ) );
-		Point2f pb = new Point2f( DMath.lerp( bd, b.start.x, b.end.x ), DMath.lerp( bd, b.start.y, b.end.y ) );
+		Road a = ap.r;
+		float ad = ap.pos;
+		
+		Road b = bp.r;
+		float bd = bp.pos;
+		
+		Point2f pa = ap.getCoords();
+		Point2f pb = bp.getCoords();
 		
 		Road r = new TwoLaneRoad( pa.x, pa.y, pb.x, pb.y );
 		
-		r.connections.add( r.new RoadConnection( a, 0, 0 ) );
-		r.connections.add( r.new RoadConnection( b, 0, 1 ) );
-		
 		//To understand how to find which side a road is on, see this: 
 		//http://stackoverflow.com/questions/13221873/determining-if-one-2d-vector-is-to-the-right-or-left-of-another
-		
+				
 		Vector2f rv = new Vector2f( r.end );
 		rv.sub( r.start );
 		
 		rv.set( -rv.y, rv.x ); //rot90CCW
 		
-		Vector2f av = a.getVector();
-		a.connections.add( a.new RoadConnection( r, av.dot( rv ) > 0 ? -1 : 1, ad ) );
+		if( a != null )
+		{
+			r.connections.add( r.new RoadConnection( a, 0, 0 ) );
+			Vector2f av = a.getVector();
+			int aside = (ad == 0 || ad == 1) ? 0 : av.dot( rv ) > 0 ? -1 : 1;
+			a.connections.add( a.new RoadConnection( r, aside, ad ) );
+		}
 		
-		Vector2f bv = b.getVector();
-		b.connections.add( b.new RoadConnection( r, bv.dot( rv ) > 0 ? 1 : -1, bd ) );
+		if( b != null )
+		{
+			r.connections.add( r.new RoadConnection( b, 0, 1 ) );
+			Vector2f bv = b.getVector();
+			int bside = (bd == 0 || bd == 1) ? 0 : bv.dot( rv ) > 0 ? 1 : -1;
+			b.connections.add( b.new RoadConnection( r, bside, bd ) );
+			
+		}
 		
 		return r;
 	}
@@ -154,21 +176,18 @@ public class TrafficSim extends Graphics2DRenderer implements MouseListener
 		ts.begin();
 	}
 
-	@Override
-	public void mouseClicked(MouseEvent arg0) {
-		// TODO Auto-generated method stub
+	public void mouseClicked( MouseEvent e )
+	{
 		
 	}
 
-	@Override
-	public void mouseEntered(MouseEvent arg0) {
-		// TODO Auto-generated method stub
+	public void mouseEntered( MouseEvent e ) 
+	{
 		
 	}
 
-	@Override
-	public void mouseExited(MouseEvent arg0) {
-		// TODO Auto-generated method stub
+	public void mouseExited( MouseEvent e )
+	{
 		
 	}
 
@@ -188,21 +207,15 @@ public class TrafficSim extends Graphics2DRenderer implements MouseListener
 		
 		if( beginRoad == null )
 		{
-			if( rp != null )
-			{
-				beginRoad = rp;
-			}
+			beginRoad = rp;
 		}
 		else
 		{
-			if( rp != null )
+			synchronized( roads )
 			{
-				synchronized( roads )
-				{
-					roads.add( connectRoads( beginRoad.r, beginRoad.pos, rp.r, rp.pos ) );
-				}
-				beginRoad = null;
+				roads.add( createRoad( beginRoad, rp ) );
 			}
+			beginRoad = null;
 		}
 	}
 }
